@@ -6,7 +6,7 @@ type MobileContainerProps = {
 
 export function MobileContainer({ children }: MobileContainerProps) {
   return (
-    <div className="mx-auto w-full max-w-[29.75rem] px-3 py-4 min-[430px]:max-w-[31rem] min-[430px]:px-4 sm:max-w-[31.25rem] sm:px-5 sm:py-7">
+    <div className="mx-auto w-full max-w-[30.25rem] py-4 min-[430px]:max-w-[31.75rem] sm:max-w-[32rem] sm:py-7">
       <div className="overflow-hidden rounded-[2rem] border border-[#c9d7dd] bg-app-surface shadow-[var(--app-shadow-strong)]">
         {children}
       </div>

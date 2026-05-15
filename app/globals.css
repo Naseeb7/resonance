@@ -63,7 +63,7 @@ body {
 
 @media (min-width: 430px) and (max-width: 700px) {
   .safe-px {
-    padding-left: max(1.25rem, env(safe-area-inset-left));
-    padding-right: max(1.25rem, env(safe-area-inset-right));
+    padding-left: max(1.1rem, env(safe-area-inset-left));
+    padding-right: max(1.1rem, env(safe-area-inset-right));
   }
 }
