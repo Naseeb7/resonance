@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -56,6 +56,7 @@ const LESSON_STEPS: LessonStep[] = [
 
 const recognitionOptions = ["river", "lotion", "rocket"];
 const reflectionOptions = ["Calm and focused", "Getting closer", "Needed more time"];
+const softEase = [0.22, 0.85, 0.3, 1] as const;
 
 export function LessonEngine() {
   const [stepIndex, setStepIndex] = useState(0);
@@ -78,16 +79,36 @@ export function LessonEngine() {
   const streamRef = useRef<MediaStream | null>(null);
 
   const stepNumber = useMemo(() => `${stepIndex + 1} of ${LESSON_STEPS.length}`, [stepIndex]);
+  const isMirrorStep = currentStep.id === "mirror-mode";
+
+  const stopCameraStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraReady(false);
+    setCameraState("idle");
+  };
 
   useEffect(() => {
     return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => track.stop());
-      }
+      stopCameraStream();
     };
   }, []);
 
+  useEffect(() => {
+    if (!isMirrorStep) {
+      stopCameraStream();
+    }
+  }, [isMirrorStep]);
+
   const moveNext = () => {
+    if (isMirrorStep) {
+      stopCameraStream();
+    }
     setStepIndex((prev) => Math.min(prev + 1, LESSON_STEPS.length - 1));
   };
 
@@ -121,6 +142,7 @@ export function LessonEngine() {
       setCameraReady(true);
     } catch {
       setCameraState("denied");
+      setCameraReady(false);
     }
   };
 
@@ -138,9 +160,7 @@ export function LessonEngine() {
     <div className="flex min-h-[calc(100dvh-2.5rem)] flex-col gap-5 p-5 sm:min-h-[44rem]">
       <header className="space-y-3 pt-2">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5c728a]">Resonance</p>
-        <h1 className="text-[1.75rem] font-semibold leading-9 tracking-[-0.015em] text-app-heading">
-          {currentStep.title}
-        </h1>
+        <h1 className="text-[1.75rem] font-semibold leading-9 tracking-[-0.015em] text-app-heading">{currentStep.title}</h1>
         <p className="text-sm leading-6 text-[#566b82]">{currentStep.subtitle}</p>
       </header>
 
@@ -154,12 +174,10 @@ export function LessonEngine() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 8 }}
-          transition={{ duration: 0.35, ease: [0.25, 0.9, 0.3, 1] }}
+          transition={{ duration: 0.42, ease: softEase }}
           className="space-y-4"
         >
-          {currentStep.id === "welcome" ? (
-            <WelcomeStep />
-          ) : null}
+          {currentStep.id === "welcome" ? <WelcomeStep /> : null}
 
           {currentStep.id === "listen-repeat" ? (
             <ListenRepeatStep
@@ -184,44 +202,41 @@ export function LessonEngine() {
           ) : null}
 
           {currentStep.id === "mirror-mode" ? (
-            <MirrorModeStep
-              cameraState={cameraState}
-              videoRef={videoRef}
-              onEnableCamera={enableCamera}
-            />
+            <MirrorModeStep cameraState={cameraState} videoRef={videoRef} onEnableCamera={enableCamera} />
           ) : null}
 
-          {currentStep.id === "reflection" ? (
-            <ReflectionStep selected={reflection} onSelect={setReflection} />
-          ) : null}
+          {currentStep.id === "reflection" ? <ReflectionStep selected={reflection} onSelect={setReflection} /> : null}
 
           {currentStep.id === "completion" ? <CompletionStep /> : null}
         </motion.section>
       </AnimatePresence>
 
       <div className="mt-auto space-y-3 pb-1">
-        {showNextCta ? (
-          <PrimaryButton type="button" onClick={moveNext} disabled={!canProceed}>
-            Continue
-          </PrimaryButton>
-        ) : (
-          <PrimaryButton
-            type="button"
-            onClick={() => {
-              setStepIndex(0);
-              setHasListened(false);
-              setHasRecorded(false);
-              setSelectedWord(null);
-              setShowWordFeedback(false);
-              setReflection(null);
-            }}
-          >
-            Begin tomorrow&apos;s session
-          </PrimaryButton>
-        )}
+        <motion.div layout transition={{ duration: 0.3, ease: softEase }}>
+          {showNextCta ? (
+            <PrimaryButton type="button" onClick={moveNext} disabled={!canProceed}>
+              Continue
+            </PrimaryButton>
+          ) : (
+            <PrimaryButton
+              type="button"
+              onClick={() => {
+                stopCameraStream();
+                setStepIndex(0);
+                setHasListened(false);
+                setHasRecorded(false);
+                setSelectedWord(null);
+                setShowWordFeedback(false);
+                setReflection(null);
+              }}
+            >
+              Begin tomorrow&apos;s session
+            </PrimaryButton>
+          )}
+        </motion.div>
         <p className="px-1 text-center text-xs leading-5 text-[#5c7188]">
           {currentStep.id === "completion"
-            ? "Consistency strengthens articulation. You are building it one session at a time."
+            ? "Consistency strengthens articulation. You are building it one steady session at a time."
             : "Try again slowly when needed. A calm pace helps articulation settle in."}
         </p>
       </div>
@@ -231,15 +246,17 @@ export function LessonEngine() {
 
 function WelcomeStep() {
   return (
-    <SectionCard
-      title="Today&apos;s focus set"
-      description="Listen, repeat, notice placement, and reflect. This session is built to feel steady."
-    >
-      <div className="rounded-2xl border border-[#d7e2e7] bg-[#edf4f7] p-4">
-        <p className="text-sm font-medium text-app-heading">R-word set: river, warm, grow</p>
-        <p className="mt-1 text-sm text-[#5e7288]">Estimated time: 4 minutes</p>
-      </div>
-    </SectionCard>
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: softEase }}>
+      <SectionCard
+        title="Today&apos;s focus set"
+        description="Listen, repeat, notice placement, and reflect. This session is built to feel steady."
+      >
+        <div className="rounded-2xl border border-[#d7e2e7] bg-[#edf4f7] p-4">
+          <p className="text-sm font-medium text-app-heading">R-word set: river, warm, grow</p>
+          <p className="mt-1 text-sm text-[#5e7288]">Estimated time: 4 minutes</p>
+        </div>
+      </SectionCard>
+    </motion.div>
   );
 }
 
@@ -260,7 +277,12 @@ function ListenRepeatStep({
 }) {
   return (
     <SectionCard title="Focus word" description="Listen once, then record one slow attempt.">
-      <div className="space-y-4">
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
+        className="space-y-4"
+      >
         <div className="rounded-2xl border border-[#d7e4e8] bg-[#f2f7f8] px-4 py-6 text-center">
           <p className="text-4xl font-semibold tracking-[-0.02em] text-app-heading">River</p>
         </div>
@@ -270,7 +292,7 @@ function ListenRepeatStep({
             type="button"
             onClick={onPlay}
             disabled={isListening}
-            className="rounded-2xl border border-[#cbdbe1] bg-[#f4f9fa] px-4 py-3 text-sm font-medium text-[#365469] transition-colors hover:bg-[#ebf4f7] disabled:opacity-60"
+            className="rounded-2xl border border-[#cbdbe1] bg-[#f4f9fa] px-4 py-3 text-sm font-medium text-[#365469] transition-[transform,background-color,box-shadow] duration-200 hover:bg-[#ebf4f7] active:translate-y-[1px] active:bg-[#e6f1f5] disabled:opacity-60"
           >
             {isListening ? "Playing..." : hasListened ? "Replay audio" : "Play audio"}
           </button>
@@ -278,17 +300,26 @@ function ListenRepeatStep({
             type="button"
             onClick={onRecord}
             disabled={isRecording || !hasListened}
-            className="rounded-2xl border border-[#cbdbe1] bg-[#f4f9fa] px-4 py-3 text-sm font-medium text-[#365469] transition-colors hover:bg-[#ebf4f7] disabled:opacity-60"
+            className="rounded-2xl border border-[#cbdbe1] bg-[#f4f9fa] px-4 py-3 text-sm font-medium text-[#365469] transition-[transform,background-color,box-shadow] duration-200 hover:bg-[#ebf4f7] active:translate-y-[1px] active:bg-[#e6f1f5] disabled:opacity-60"
           >
             {isRecording ? "Recording..." : hasRecorded ? "Record again" : "Record attempt"}
           </button>
         </div>
-        <p className="text-sm text-[#5c7188]">
-          {hasRecorded
-            ? "That sounded stronger. Keep your jaw relaxed and tongue steady on the next pass."
-            : "Try again slowly. Clarity improves when you leave a short pause before the R sound."}
-        </p>
-      </div>
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={hasRecorded ? "done" : "guide"}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.28, ease: softEase }}
+            className="text-sm text-[#5c7188]"
+          >
+            {hasRecorded
+              ? "That sounded stronger. Keep your jaw relaxed and tongue steady on the next pass."
+              : "Try again slowly. Clarity improves when you leave a short pause before the R sound."}
+          </motion.p>
+        </AnimatePresence>
+      </motion.div>
     </SectionCard>
   );
 }
@@ -311,22 +342,38 @@ function WordRecognitionStep({
   return (
     <SectionCard title="Choose the clearest R-sound" description="Select the option with the strongest opening R.">
       <div className="space-y-3">
-        {recognitionOptions.map((option) => (
+        {recognitionOptions.map((option, index) => (
           <motion.button
             key={option}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: index * 0.04, ease: softEase }}
             whileTap={{ scale: 0.99 }}
+            whileHover={{ y: -1 }}
             type="button"
             onClick={() => onSelect(option)}
             className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
               selectedWord === option
-                ? "border-[#8eb0c4] bg-[#eaf3f8] text-[#2e4b62]"
+                ? "border-[#8eb0c4] bg-[#eaf3f8] text-[#2e4b62] shadow-[0_8px_18px_-14px_rgba(46,75,98,0.55)]"
                 : "border-[#d3e1e6] bg-[#f8fbfc] text-[#486076] hover:bg-[#f0f6f9]"
             }`}
           >
             {option}
           </motion.button>
         ))}
-        {showFeedback ? <p className="pt-1 text-sm text-[#5c7188]">{supportive}</p> : null}
+        <AnimatePresence>
+          {showFeedback ? (
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.28, ease: softEase }}
+              className="pt-1 text-sm text-[#5c7188]"
+            >
+              {supportive}
+            </motion.p>
+          ) : null}
+        </AnimatePresence>
       </div>
     </SectionCard>
   );
@@ -344,31 +391,59 @@ function MirrorModeStep({
   return (
     <SectionCard
       title="Mirror awareness"
-      description="This is for self-awareness only. No scoring, no judgment, just guided observation."
+      description="A short guided check for lip shape, jaw softness, and steady R placement."
     >
       <div className="space-y-4">
         <div className="relative overflow-hidden rounded-2xl border border-[#cedde4] bg-[#dfe8ee]">
           <video ref={videoRef} autoPlay muted playsInline className="h-56 w-full object-cover" />
+          <div className="pointer-events-none absolute inset-0">
+            <motion.div
+              className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.24)_0%,rgba(255,255,255,0)_62%)]"
+              animate={{ opacity: [0.2, 0.35, 0.2], scale: [0.96, 1.02, 0.96] }}
+              transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </div>
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="h-36 w-28 rounded-[2rem] border-2 border-white/80 shadow-[0_0_0_999px_rgba(29,53,71,0.22)]" />
+            <div className="relative h-40 w-32 rounded-[2.2rem] border-2 border-white/85 shadow-[0_0_0_999px_rgba(29,53,71,0.24)]">
+              <div className="absolute left-1/2 top-[56%] h-9 w-16 -translate-x-1/2 rounded-[999px] border border-white/85 bg-white/8" />
+            </div>
           </div>
           {cameraState === "idle" ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-[#dce6eb]">
-              <p className="text-sm text-[#4f657c]">Enable camera to begin mirror guidance.</p>
+            <div className="absolute inset-0 flex items-center justify-center bg-[#dce6eb]/95">
+              <p className="max-w-[15rem] px-4 text-center text-sm leading-6 text-[#4f657c]">
+                Enable camera to begin guided mirror practice.
+              </p>
             </div>
           ) : null}
+        </div>
+        <div className="flex items-center gap-2 rounded-2xl border border-[#d6e2e7] bg-[#f5f9fb] px-4 py-3">
+          {[0, 1, 2, 3, 4].map((index) => (
+            <motion.span
+              key={index}
+              className="h-1.5 w-1.5 rounded-full bg-[#7b99ae]"
+              animate={{ opacity: [0.35, 0.9, 0.35], y: [0, -1.5, 0] }}
+              transition={{ duration: 1.8, repeat: Infinity, delay: index * 0.14, ease: "easeInOut" }}
+            />
+          ))}
+          <p className="ml-1 text-xs tracking-[0.08em] text-[#647a90]">Steady breath, gentle R rhythm</p>
+        </div>
+        <div className="rounded-2xl border border-[#d5e1e6] bg-[#f3f8fa] px-4 py-3">
+          <p className="text-sm font-medium text-[#41596f]">Guidance</p>
+          <p className="mt-1 text-sm leading-6 text-[#5d7288]">
+            Keep your lips relaxed. Shape the R gently while watching for a stable jaw and smooth airflow.
+          </p>
         </div>
         <button
           type="button"
           onClick={onEnableCamera}
-          className="w-full rounded-2xl border border-[#c9d9df] bg-[#f4f9fa] px-4 py-3 text-sm font-medium text-[#365469] transition-colors hover:bg-[#ebf4f7]"
+          className="w-full rounded-2xl border border-[#c9d9df] bg-[#f4f9fa] px-4 py-3 text-sm font-medium text-[#365469] transition-[transform,background-color] duration-200 hover:bg-[#ebf4f7] active:translate-y-[1px]"
         >
-          {cameraState === "granted" ? "Camera ready" : "Enable front camera"}
+          {cameraState === "granted" ? "Camera is ready" : "Enable front camera"}
         </button>
         <p className="text-sm text-[#5c7188]">
           {cameraState === "denied"
-            ? "Camera access is off. You can continue after allowing permission and trying again."
-            : "Keep lips relaxed, then softly shape the R sound while watching tongue and jaw stability."}
+            ? "Camera access is currently off. Allow access when ready, then continue at your own pace."
+            : "This check is for awareness, not scoring. Notice small improvements over repeated attempts."}
         </p>
       </div>
     </SectionCard>
@@ -385,21 +460,37 @@ function ReflectionStep({
   return (
     <SectionCard title="How did this practice feel?" description="Choose the response that matches your session.">
       <div className="space-y-3">
-        {reflectionOptions.map((option) => (
-          <button
+        {reflectionOptions.map((option, index) => (
+          <motion.button
             key={option}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: index * 0.04, ease: softEase }}
+            whileTap={{ scale: 0.995 }}
             type="button"
             onClick={() => onSelect(option)}
             className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${
               selected === option
-                ? "border-[#8ea9bc] bg-[#eaf2f7] text-[#2e4b62]"
+                ? "border-[#8ea9bc] bg-[#eaf2f7] text-[#2e4b62] shadow-[0_8px_18px_-14px_rgba(46,75,98,0.55)]"
                 : "border-[#d3e1e6] bg-[#f8fbfc] text-[#4b6278] hover:bg-[#f0f6f9]"
             }`}
           >
             {option}
-          </button>
+          </motion.button>
         ))}
-        {selected ? <p className="pt-1 text-sm text-[#5c7188]">Thank you. This check-in helps pace future sessions.</p> : null}
+        <AnimatePresence>
+          {selected ? (
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.28, ease: softEase }}
+              className="pt-1 text-sm text-[#5c7188]"
+            >
+              Thank you. This check-in helps pace future sessions.
+            </motion.p>
+          ) : null}
+        </AnimatePresence>
       </div>
     </SectionCard>
   );
@@ -407,11 +498,13 @@ function ReflectionStep({
 
 function CompletionStep() {
   return (
-    <SectionCard
-      title="You showed up today"
-      description="Consistency strengthens articulation. Every repetition builds muscle memory."
-    >
-      <div className="grid grid-cols-2 gap-3">
+    <SectionCard title="You showed up today" description="A calm finish to today&apos;s session. Your consistency is doing the work.">
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+        className="grid grid-cols-2 gap-3"
+      >
         <div className="rounded-2xl border border-[#d1dfe5] bg-[#eef4f8] p-4">
           <p className="text-xs uppercase tracking-[0.12em] text-[#6a7f94]">Streak</p>
           <p className="mt-1 text-2xl font-semibold text-app-heading">6 days</p>
@@ -420,7 +513,10 @@ function CompletionStep() {
           <p className="text-xs uppercase tracking-[0.12em] text-[#6a7f94]">Session XP</p>
           <p className="mt-1 text-2xl font-semibold text-app-heading">+120</p>
         </div>
-      </div>
+      </motion.div>
+      <p className="mt-3 text-sm leading-6 text-[#5d7288]">
+        Every steady repetition builds speech confidence. Today&apos;s effort counts.
+      </p>
     </SectionCard>
   );
 }
@@ -447,3 +543,4 @@ function WavePulse({ active }: { active: boolean }) {
     </div>
   );
 }
+

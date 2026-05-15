@@ -10,12 +10,12 @@ type PrimaryButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 export function PrimaryButton({ children, className = "", ...props }: PrimaryButtonProps) {
   return (
     <motion.div
-      whileTap={{ scale: 0.985 }}
+      whileTap={{ scale: 0.985, y: 0.5 }}
       whileHover={{ y: -1 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+      transition={{ duration: 0.22, ease: [0.22, 0.85, 0.3, 1] }}
     >
       <button
-        className={`h-12 w-full rounded-2xl bg-[linear-gradient(180deg,#4b8c91_0%,#3f7e83_100%)] px-5 text-sm font-semibold text-white shadow-[0_16px_30px_-16px_rgba(53,106,110,0.75)] transition-[filter,box-shadow,transform] duration-200 hover:brightness-[1.03] hover:shadow-[0_20px_36px_-17px_rgba(47,96,101,0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6ea7aa] focus-visible:ring-offset-2 focus-visible:ring-offset-[#e9f1f2] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+        className={`h-12 w-full rounded-2xl bg-[linear-gradient(180deg,#4b8c91_0%,#3f7e83_100%)] px-5 text-sm font-semibold text-white shadow-[0_16px_30px_-16px_rgba(53,106,110,0.75)] transition-[filter,box-shadow,transform] duration-200 hover:brightness-[1.03] hover:shadow-[0_20px_36px_-17px_rgba(47,96,101,0.7)] active:brightness-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6ea7aa] focus-visible:ring-offset-2 focus-visible:ring-offset-[#e9f1f2] disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
         {...props}
       >
         {children}

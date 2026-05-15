@@ -11,6 +11,7 @@ type ProgressBarProps = {
 export function ProgressBar({ value, max = 100, label }: ProgressBarProps) {
   const safeValue = Math.max(0, Math.min(value, max));
   const percentage = Math.round((safeValue / max) * 100);
+  const hasProgress = percentage > 0;
 
   return (
     <section aria-label={label ?? "Practice progress"} className="space-y-2.5">
@@ -22,13 +23,15 @@ export function ProgressBar({ value, max = 100, label }: ProgressBarProps) {
         <motion.div
           className="h-full rounded-full bg-gradient-to-r from-app-teal via-[#4e8292] to-app-blue"
           animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.7, ease: [0.25, 0.9, 0.3, 1] }}
+          transition={{ duration: 0.85, ease: [0.22, 0.85, 0.3, 1] }}
         />
-        <motion.div
-          className="pointer-events-none absolute inset-y-0 w-10 rounded-full bg-white/30"
-          animate={{ x: ["-140%", "420%"] }}
-          transition={{ duration: 1.9, repeat: Infinity, repeatDelay: 2.2, ease: "easeInOut" }}
-        />
+        {hasProgress ? (
+          <motion.div
+            className="pointer-events-none absolute inset-y-0 w-10 rounded-full bg-white/30"
+            animate={{ x: ["-140%", "420%"], opacity: [0, 0.5, 0] }}
+            transition={{ duration: 2.2, repeat: Infinity, repeatDelay: 2.6, ease: "easeInOut" }}
+          />
+        ) : null}
       </div>
     </section>
   );
