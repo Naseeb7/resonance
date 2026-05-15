@@ -4,12 +4,17 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Resonance",
     short_name: "Resonance",
-    description: "A calm, supportive daily speech therapy practice companion.",
+    description:
+      "A calm daily speech therapy experience focused on articulation confidence, guided practice, and supportive progression.",
     start_url: "/",
+    scope: "/",
     display: "standalone",
     background_color: "#eef3f3",
     theme_color: "#eef3f3",
     orientation: "portrait",
+    lang: "en-US",
+    categories: ["health", "medical", "education"],
+    prefer_related_applications: false,
     icons: [
       {
         src: "/icons/icon-192.svg",

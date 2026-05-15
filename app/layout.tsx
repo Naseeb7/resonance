@@ -8,9 +8,24 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Resonance",
-  description: "A calm, supportive daily speech therapy practice companion.",
+  title: {
+    default: "Resonance",
+    template: "%s | Resonance",
+  },
+  description:
+    "A calm daily speech therapy experience focused on articulation confidence, guided practice, and emotionally supportive progression.",
   applicationName: "Resonance",
+  keywords: [
+    "speech therapy",
+    "articulation practice",
+    "daily speech practice",
+    "supportive speech training",
+    "mobile speech therapy",
+  ],
+  metadataBase: new URL("https://resonance.app"),
+  alternates: {
+    canonical: "/",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -26,6 +41,29 @@ export const metadata: Metadata = {
       { url: "/icons/icon-512.svg", sizes: "512x512", type: "image/svg+xml" },
     ],
     apple: [{ url: "/icons/apple-touch-icon.svg", type: "image/svg+xml" }],
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Resonance",
+    title: "Resonance",
+    description:
+      "A calm daily speech therapy experience focused on articulation confidence and emotionally supportive progression.",
+    url: "/",
+    images: [
+      {
+        url: "/icons/icon-512.svg",
+        width: 512,
+        height: 512,
+        alt: "Resonance app icon",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Resonance",
+    description:
+      "A calm daily speech therapy experience focused on articulation confidence and supportive progression.",
+    images: ["/icons/icon-512.svg"],
   },
 };
 
