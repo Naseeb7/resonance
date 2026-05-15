@@ -6,8 +6,8 @@ It is designed as a calm daily articulation practice experience centered on emot
 
 **Quick Access**
 
-- Live Demo: `https://your-demo-url.com`
-- GitHub Repository: `https://github.com/your-org/resonance`
+- Live Demo: `https://resonance-gamma-five.vercel.app/`
+- GitHub Repository: `https://github.com/Naseeb7/resonance`
 
 ## Design Philosophy
 
