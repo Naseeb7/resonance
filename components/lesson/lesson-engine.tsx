@@ -64,7 +64,7 @@ const optionSelectedClass =
 const optionIdleClass =
   "border-[#d3e1e6] bg-[#f8fbfc] text-[#4b6278] hover:bg-[#f0f6f9]";
 const secondaryActionButtonClass =
-  "rounded-2xl border border-[#cbdbe1] bg-[#f4f9fa] px-4 py-3 text-sm font-medium text-[#365469] transition-[transform,background-color,box-shadow] duration-200 hover:bg-[#ebf4f7] active:translate-y-[1px] active:bg-[#e6f1f5] disabled:opacity-60";
+  "rounded-2xl border border-[#cbdbe1] bg-[#f4f9fa] px-5 py-3.5 text-[0.95rem] font-medium text-[#365469] transition-[transform,background-color,box-shadow] duration-200 hover:bg-[#ebf4f7] active:translate-y-[1px] active:bg-[#e6f1f5] disabled:opacity-60";
 
 export function LessonEngine() {
   const [stepIndex, setStepIndex] = useState(0);
@@ -204,7 +204,7 @@ export function LessonEngine() {
     (currentStep.id === "reflection" && reflection !== null);
 
   return (
-    <div className="flex min-h-[calc(100dvh-2.5rem)] flex-col gap-5 p-5 min-[430px]:gap-6 min-[430px]:px-6 min-[430px]:py-6 sm:min-h-[44rem]">
+    <div className="flex min-h-[calc(100dvh-2.5rem)] flex-col gap-5 px-4 py-5 min-[430px]:gap-6 min-[430px]:px-4 min-[430px]:py-6 sm:min-h-[44rem] sm:px-5">
       <header className="space-y-3 pt-2">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5c728a]">Resonance</p>
         <h1 className="text-[1.75rem] font-semibold leading-9 tracking-[-0.015em] text-app-heading">{currentStep.title}</h1>
@@ -323,7 +323,7 @@ function ListenRepeatStep({
           <p className="text-4xl font-semibold tracking-[-0.02em] text-app-heading">River</p>
         </div>
         <WavePulse active={isListening || isRecording} />
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 min-[410px]:grid-cols-2">
           <button
             type="button"
             onClick={onPlay}
