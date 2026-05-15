@@ -65,10 +65,15 @@ export const metadata: Metadata = {
       "A calm daily speech therapy experience focused on articulation confidence and supportive progression.",
     images: ["/icons/icon-512.svg"],
   },
+  other: {
+    "color-scheme": "light",
+    "supported-color-schemes": "light",
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: "#eef3f3",
+  colorScheme: "light",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

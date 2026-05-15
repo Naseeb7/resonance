@@ -204,7 +204,7 @@ export function LessonEngine() {
     (currentStep.id === "reflection" && reflection !== null);
 
   return (
-    <div className="flex min-h-[calc(100dvh-2.5rem)] flex-col gap-5 p-5 sm:min-h-[44rem]">
+    <div className="flex min-h-[calc(100dvh-2.5rem)] flex-col gap-5 p-5 min-[430px]:gap-6 min-[430px]:px-6 min-[430px]:py-6 sm:min-h-[44rem]">
       <header className="space-y-3 pt-2">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#5c728a]">Resonance</p>
         <h1 className="text-[1.75rem] font-semibold leading-9 tracking-[-0.015em] text-app-heading">{currentStep.title}</h1>
