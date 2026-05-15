@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RefObject } from "react";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { ProgressBar } from "@/components/ui/progress-bar";
@@ -57,6 +57,14 @@ const LESSON_STEPS: LessonStep[] = [
 const recognitionOptions = ["river", "lotion", "rocket"];
 const reflectionOptions = ["Calm and focused", "Getting closer", "Needed more time"];
 const softEase = [0.22, 0.85, 0.3, 1] as const;
+const optionBaseClass =
+  "w-full rounded-2xl border px-4 py-3 text-left text-sm transition-colors";
+const optionSelectedClass =
+  "border-[#8ea9bc] bg-[#eaf2f7] text-[#2e4b62] shadow-[0_8px_18px_-14px_rgba(46,75,98,0.55)]";
+const optionIdleClass =
+  "border-[#d3e1e6] bg-[#f8fbfc] text-[#4b6278] hover:bg-[#f0f6f9]";
+const secondaryActionButtonClass =
+  "rounded-2xl border border-[#cbdbe1] bg-[#f4f9fa] px-4 py-3 text-sm font-medium text-[#365469] transition-[transform,background-color,box-shadow] duration-200 hover:bg-[#ebf4f7] active:translate-y-[1px] active:bg-[#e6f1f5] disabled:opacity-60";
 
 export function LessonEngine() {
   const [stepIndex, setStepIndex] = useState(0);
@@ -77,11 +85,24 @@ export function LessonEngine() {
   const [cameraReady, setCameraReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const listenTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recordTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const stepNumber = useMemo(() => `${stepIndex + 1} of ${LESSON_STEPS.length}`, [stepIndex]);
   const isMirrorStep = currentStep.id === "mirror-mode";
 
-  const stopCameraStream = () => {
+  const clearPracticeTimers = useCallback(() => {
+    if (listenTimeoutRef.current) {
+      clearTimeout(listenTimeoutRef.current);
+      listenTimeoutRef.current = null;
+    }
+    if (recordTimeoutRef.current) {
+      clearTimeout(recordTimeoutRef.current);
+      recordTimeoutRef.current = null;
+    }
+  }, []);
+
+  const releaseCameraStream = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -89,21 +110,39 @@ export function LessonEngine() {
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
+  }, []);
+
+  const stopCameraStream = useCallback(() => {
+    releaseCameraStream();
     setCameraReady(false);
     setCameraState("idle");
-  };
+  }, [releaseCameraStream]);
+
+  const resetSession = useCallback(() => {
+    clearPracticeTimers();
+    stopCameraStream();
+    setStepIndex(0);
+    setHasListened(false);
+    setIsListening(false);
+    setHasRecorded(false);
+    setIsRecording(false);
+    setSelectedWord(null);
+    setShowWordFeedback(false);
+    setReflection(null);
+  }, [clearPracticeTimers, stopCameraStream]);
 
   useEffect(() => {
     return () => {
-      stopCameraStream();
+      clearPracticeTimers();
+      releaseCameraStream();
     };
-  }, []);
+  }, [clearPracticeTimers, releaseCameraStream]);
 
   useEffect(() => {
     if (!isMirrorStep) {
-      stopCameraStream();
+      releaseCameraStream();
     }
-  }, [isMirrorStep]);
+  }, [isMirrorStep, releaseCameraStream]);
 
   const moveNext = () => {
     if (isMirrorStep) {
@@ -112,21 +151,29 @@ export function LessonEngine() {
     setStepIndex((prev) => Math.min(prev + 1, LESSON_STEPS.length - 1));
   };
 
-  const playFocusAudio = () => {
+  const playFocusAudio = useCallback(() => {
+    if (listenTimeoutRef.current) {
+      clearTimeout(listenTimeoutRef.current);
+    }
     setIsListening(true);
-    setTimeout(() => {
+    listenTimeoutRef.current = setTimeout(() => {
       setIsListening(false);
       setHasListened(true);
+      listenTimeoutRef.current = null;
     }, 1700);
-  };
+  }, []);
 
-  const recordAttempt = () => {
+  const recordAttempt = useCallback(() => {
+    if (recordTimeoutRef.current) {
+      clearTimeout(recordTimeoutRef.current);
+    }
     setIsRecording(true);
-    setTimeout(() => {
+    recordTimeoutRef.current = setTimeout(() => {
       setIsRecording(false);
       setHasRecorded(true);
+      recordTimeoutRef.current = null;
     }, 2200);
-  };
+  }, []);
 
   const enableCamera = async () => {
     try {
@@ -218,18 +265,7 @@ export function LessonEngine() {
               Continue
             </PrimaryButton>
           ) : (
-            <PrimaryButton
-              type="button"
-              onClick={() => {
-                stopCameraStream();
-                setStepIndex(0);
-                setHasListened(false);
-                setHasRecorded(false);
-                setSelectedWord(null);
-                setShowWordFeedback(false);
-                setReflection(null);
-              }}
-            >
+            <PrimaryButton type="button" onClick={resetSession}>
               Begin tomorrow&apos;s session
             </PrimaryButton>
           )}
@@ -292,7 +328,7 @@ function ListenRepeatStep({
             type="button"
             onClick={onPlay}
             disabled={isListening}
-            className="rounded-2xl border border-[#cbdbe1] bg-[#f4f9fa] px-4 py-3 text-sm font-medium text-[#365469] transition-[transform,background-color,box-shadow] duration-200 hover:bg-[#ebf4f7] active:translate-y-[1px] active:bg-[#e6f1f5] disabled:opacity-60"
+            className={secondaryActionButtonClass}
           >
             {isListening ? "Playing..." : hasListened ? "Replay audio" : "Play audio"}
           </button>
@@ -300,7 +336,7 @@ function ListenRepeatStep({
             type="button"
             onClick={onRecord}
             disabled={isRecording || !hasListened}
-            className="rounded-2xl border border-[#cbdbe1] bg-[#f4f9fa] px-4 py-3 text-sm font-medium text-[#365469] transition-[transform,background-color,box-shadow] duration-200 hover:bg-[#ebf4f7] active:translate-y-[1px] active:bg-[#e6f1f5] disabled:opacity-60"
+            className={secondaryActionButtonClass}
           >
             {isRecording ? "Recording..." : hasRecorded ? "Record again" : "Record attempt"}
           </button>
@@ -352,7 +388,7 @@ function WordRecognitionStep({
             whileHover={{ y: -1 }}
             type="button"
             onClick={() => onSelect(option)}
-            className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-medium transition-colors ${
+            className={`${optionBaseClass} font-medium ${
               selectedWord === option
                 ? "border-[#8eb0c4] bg-[#eaf3f8] text-[#2e4b62] shadow-[0_8px_18px_-14px_rgba(46,75,98,0.55)]"
                 : "border-[#d3e1e6] bg-[#f8fbfc] text-[#486076] hover:bg-[#f0f6f9]"
@@ -469,10 +505,8 @@ function ReflectionStep({
             whileTap={{ scale: 0.995 }}
             type="button"
             onClick={() => onSelect(option)}
-            className={`w-full rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${
-              selected === option
-                ? "border-[#8ea9bc] bg-[#eaf2f7] text-[#2e4b62] shadow-[0_8px_18px_-14px_rgba(46,75,98,0.55)]"
-                : "border-[#d3e1e6] bg-[#f8fbfc] text-[#4b6278] hover:bg-[#f0f6f9]"
+            className={`${optionBaseClass} ${
+              selected === option ? optionSelectedClass : optionIdleClass
             }`}
           >
             {option}
